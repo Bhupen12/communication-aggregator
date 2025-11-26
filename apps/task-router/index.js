@@ -15,10 +15,24 @@ async function connectToRabbitMQ() {
     const connection = await amqp.connect(RABBITMQ_URL);
     channel = await connection.createChannel();
     await channel.assertQueue(QUEUE_NAME, { durable: true });
+    await channel.assertQueue('system_logs', { durable: true });
     console.log('Connected to RabbitMQ');
   } catch (error) {
     console.error('Error connecting to RabbitMQ:', error);
     setTimeout(connectToRabbitMQ, 5000); // Retry after 5 seconds
+  }
+}
+
+function sendLog(service, status, taskId, extra={}){
+  if(channel){
+    const logData = {
+      service,
+      status,
+      taskId,
+      ...extra,
+      timestamp: new Date()
+    }
+    channel.sendToQueue('system_logs', Buffer.from(JSON.stringify(logData)));
   }
 }
 
@@ -55,7 +69,10 @@ app.post('/api/send', async (req, res) => {
 
   if(channel){
     channel.sendToQueue(QUEUE_NAME, Buffer.from(JSON.stringify(task)));
+    sendLog('TaskRouter', 'RECEIVED', task.id, { to: task.to, type: task.type });
+
     console.log('Message sent to RabbitMQ:', task);
+    
     return res.status(200).json({
       status: "Queued",
       taskId: task.id
@@ -68,6 +85,5 @@ app.post('/api/send', async (req, res) => {
 
 app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);
-
   await connectToRabbitMQ();
 });

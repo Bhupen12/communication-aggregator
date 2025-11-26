@@ -59,11 +59,27 @@ async function processMessage(channel, msg) {
     });
     console.log(`Message Send: ${id}`);
 
-    // Step C: Send ACK
+    // Step C: Send to elastic mq
+    sendLog(channel, 'DeliveryService', 'SENT', id, { to, type });
+
+    // Step D: Send ACK
     channel.ack(msg);
   } catch (error) {
     console.error(`Delivery Failed for ${id}: ${error.message}`);
     channel.nack(msg, false, true);
+  }
+}
+
+function sendLog(channel, service, status, taskId, extra={}){
+  if(channel){
+    const logData = {
+      service,
+      status,
+      taskId,
+      ...extra,
+      timestamp: new Date()
+    }
+    channel.sendToQueue('system_logs', Buffer.from(JSON.stringify(logData)));
   }
 }
 
