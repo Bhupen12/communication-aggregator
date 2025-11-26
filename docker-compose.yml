@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # 1. RabbitMQ (Message Broker)
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"      # App communication
+      - "15672:15672"    # UI Dashboard
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+
+  # 2. MongoDB (Database)
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+
+  # 3. Elasticsearch (Log Storage)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m" # Memory limit taaki laptop hang na ho
+    ports:
+      - "9200:9200"
+
+  # 4. Kibana (Log UI)
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.0
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
