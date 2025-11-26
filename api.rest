@@ -1,0 +1,9 @@
+## SEND DATA
+POST http://localhost:3001/api/send
+Content-Type: application/json
+
+{
+  "type": "email",
+  "message": "Hello, this is a email.",
+  "to": "test@yopmail.com"
+}
