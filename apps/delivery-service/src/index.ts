@@ -1,24 +1,5 @@
-import amqp, { Message } from "amqplib";
-
-const RABBITMQ_URL = "amqp://user:password@localhost:5672";
-const MESSAGE_QUEUE = "message_queue";
-const TASK_QUEUE = "log_queue"
-
-type TaskMessage = {
-  id: string;
-  type: string;
-  to: string;
-};
-
-const connectToRabbitMQ = async () => {
-  try {
-    const connection = await amqp.connect(RABBITMQ_URL);
-    return await connection.createChannel();
-  } catch (err) {
-    console.error("RabbitMQ connection failed, retrying...", err);
-    setTimeout(connectToRabbitMQ, 5000);
-  }
-};
+import { createRabbitMQChannel, LogMessagePayload, QUEUES, TaskMessagePayload } from "@repo/shared";
+import { type Message } from "amqplib";
 
 const simulateDelivery = async (type: string, to: string): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -39,10 +20,10 @@ const simulateDelivery = async (type: string, to: string): Promise<void> => {
 
 const processMessage = async (
   msg: Message | null
-): Promise<{ success: boolean, data?: TaskMessage}> => {
+): Promise<{ success: boolean, data?: TaskMessagePayload}> => {
   if (!msg) return { success: false };
 
-  const data: TaskMessage = JSON.parse(msg.content.toString());
+  const data: TaskMessagePayload = JSON.parse(msg.content.toString());
   console.log("Received message:", data);
 
   try {
@@ -55,32 +36,33 @@ const processMessage = async (
 };
 
 const startWorker = async () => {
-  const channel = await connectToRabbitMQ();
+  const channel = await createRabbitMQChannel();
   if (!channel) return;
 
   console.log("Connected to RabbitMQ");
 
-  await channel.assertQueue(MESSAGE_QUEUE, { durable: true });
-  await channel.assertQueue(TASK_QUEUE, { durable: true });
+  await channel.assertQueue(QUEUES.LOGS, { durable: true });
+  await channel.assertQueue(QUEUES.MESSAGE, { durable: true });
 
   channel.prefetch(1);
 
   console.log("Worker waiting for messages...");
 
-  channel.consume(MESSAGE_QUEUE, async (msg) => {
+  channel.consume(QUEUES.MESSAGE, async (msg) => {
     const result = await processMessage(msg);
 
     if (msg) {
       if (result.success && result.data) {
         const {id, type, to}= result.data;
-        channel.sendToQueue(TASK_QUEUE, Buffer.from(JSON.stringify({
+        const logPayload: LogMessagePayload = {
           service: "DeliveryService",
           taskId: id,
           to,
           type,
           status: 'SENT',
           timestamp: new Date(),
-        })));
+        }
+        channel.sendToQueue(QUEUES.LOGS, Buffer.from(JSON.stringify(logPayload)));
         channel.ack(msg);
       } else{
         channel.nack(msg);

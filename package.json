@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "pnpm -r run build",
+    "dev": "pnpm -r --parallel run dev",
+    "clean": "rimraf apps/*/dist packages/*/dist"
   },
   "keywords": [],
   "author": "",

@@ -26,6 +26,9 @@ importers:
 
   apps/delivery-service:
     dependencies:
+      '@repo/shared':
+        specifier: workspace:^
+        version: link:../../packages/shared
       amqplib:
         specifier: ^0.10.9
         version: 0.10.9
@@ -45,6 +48,9 @@ importers:
       '@elastic/elasticsearch':
         specifier: ^9.2.0
         version: 9.2.0
+      '@repo/shared':
+        specifier: workspace:^
+        version: link:../../packages/shared
       amqplib:
         specifier: ^0.10.9
         version: 0.10.9

@@ -1,21 +1,12 @@
 import { Client } from "@elastic/elasticsearch";
 import amqp, { Message } from "amqplib";
+import { createRabbitMQChannel, QUEUES } from "@repo/shared";
 
-const RABBITMQ_URL = "amqp://user:password@localhost:5672";
+const QUEUE_NAME = QUEUES.LOGS;
+
 const ELASTIC_NODE = "http://localhost:9200";
-const QUEUE_NAME = "log_queue";
 
 const esClient = new Client({ node: ELASTIC_NODE });
-
-const connectToRabbitMQ = async () => {
-  try {
-    const connection = await amqp.connect(RABBITMQ_URL);
-    return await connection.createChannel();
-  } catch (err) {
-    console.error("RabbitMQ connection failed, retrying...", err);
-    setTimeout(connectToRabbitMQ, 5000);
-  }
-};
 
 const saveLogToElasticsearch = async (msg: Message | null) => {
   if (!msg) return { success: false };
@@ -40,13 +31,13 @@ const saveLogToElasticsearch = async (msg: Message | null) => {
 };
 
 const startLogger = async () => {
-  const channel = await connectToRabbitMQ();
+  const channel = await createRabbitMQChannel();
   if (!channel) return;
 
-  await channel.assertQueue(QUEUE_NAME, { durable: true });
+  await channel.assertQueue(QUEUES.LOGS, { durable: true });
   console.log("Logger ready...");
 
-  channel.consume(QUEUE_NAME, async (msg) => {
+  channel.consume(QUEUES.LOGS, async (msg) => {
     const result = await saveLogToElasticsearch(msg);
 
     if (msg) {

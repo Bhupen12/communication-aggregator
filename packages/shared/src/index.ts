@@ -1,4 +1,4 @@
-import amqp from "amqplib";
+import * as amqp from "amqplib";
 
 export const RABBITMQ_URL = "amqp://user:password@localhost:5672";
 

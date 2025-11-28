@@ -9,6 +9,10 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "declaration": true,
-    "composite": true
+    "composite": true,
+    "baseUrl": ".", 
+    "paths": {
+      "@repo/shared": ["packages/shared/src/index.ts"]
+    }
   }
 }
