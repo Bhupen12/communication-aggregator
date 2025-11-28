@@ -58,6 +58,9 @@ importers:
 
   apps/task-router:
     dependencies:
+      '@repo/shared':
+        specifier: workspace:^
+        version: link:../../packages/shared
       amqplib:
         specifier: ^0.10.9
         version: 0.10.9
@@ -77,6 +80,16 @@ importers:
       '@types/express':
         specifier: ^5.0.5
         version: 5.0.5
+
+  packages/shared:
+    dependencies:
+      amqplib:
+        specifier: ^0.10.9
+        version: 0.10.9
+    devDependencies:
+      '@types/amqplib':
+        specifier: ^0.10.8
+        version: 0.10.8
 
 packages:
 

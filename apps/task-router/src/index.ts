@@ -1,33 +1,20 @@
 import express from "express";
-import amqp from "amqplib";
 import crypto from "crypto";
+import { createRabbitMQChannel, LogMessagePayload, QUEUES, SERVICE_NAMES, TaskMessagePayload } from "@repo/shared";
 
 const app = express();
 app.use(express.json());
 
 const PORT = 3001;
-const RABBITMQ_URL = "amqp://user:password@localhost:5672";
-const MESSAGE_QUEUE = "message_queue";
-const TASK_QUEUE = "log_queue"
-
-const connectToRabbitMQ = async () => {
-  try {
-    const connection = await amqp.connect(RABBITMQ_URL);
-    return await connection.createChannel();
-  } catch (err) {
-    console.error("RabbitMQ connection failed, retrying...", err);
-    setTimeout(connectToRabbitMQ, 5000);
-  }
-};
 
 const startServer = async () => {
-  const channel = await connectToRabbitMQ();
+  const channel = await createRabbitMQChannel();
   if (!channel) return;
 
   console.log("Connected to RabbitMQ");
 
-  await channel.assertQueue(MESSAGE_QUEUE, { durable: true });
-  await channel.assertQueue(TASK_QUEUE, { durable: true });
+  await channel.assertQueue(QUEUES.MESSAGE, { durable: true });
+  await channel.assertQueue(QUEUES.LOGS, { durable: true });
   console.log("Server ready...");
 
   app.post("/api/send", async (req, res) => {
@@ -43,27 +30,31 @@ const startServer = async () => {
 
     const taskId = crypto.randomUUID();
 
-    channel.sendToQueue(
-      MESSAGE_QUEUE,
-      Buffer.from(JSON.stringify({ 
-        id: taskId, 
-        type, 
-        message, 
-        to,
-        timestamp: new Date(),
-     }))
-    );
+    const msgPayload: TaskMessagePayload = {
+      id: taskId,
+      type,
+      message,
+      to,
+      timestamp: new Date(),
+    }
 
     channel.sendToQueue(
-      TASK_QUEUE,
-      Buffer.from(JSON.stringify({
-        service: "TaskService",
-        status: 'RECEIVED',
-        to,
-        taskId,
-        type,
-        timestamp: new Date(),
-      }))
+      QUEUES.MESSAGE,
+      Buffer.from(JSON.stringify(msgPayload))
+    );
+
+    const logPayload: LogMessagePayload = {
+      service: SERVICE_NAMES.TASK_ROUTER,
+      status: 'RECEIVED',
+      taskId,
+      type,
+      to,
+      timestamp: new Date(),
+    }
+
+    channel.sendToQueue(
+      QUEUES.LOGS,
+      Buffer.from(JSON.stringify(logPayload))
     );
 
     console.log("Message sent → RabbitMQ");
