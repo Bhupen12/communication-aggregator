@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "nodemon --exec ts-node src/index.ts"
   },
   "keywords": [],
   "author": "",
@@ -13,5 +15,8 @@
     "@elastic/elasticsearch": "^9.2.0",
     "amqplib": "^0.10.9",
     "dotenv": "^17.2.3"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.8"
   }
 }
