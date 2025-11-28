@@ -1,7 +1,8 @@
 import amqp, { Message } from "amqplib";
 
 const RABBITMQ_URL = "amqp://user:password@localhost:5672";
-const QUEUE_NAME = "message_queue";
+const MESSAGE_QUEUE = "message_queue";
+const TASK_QUEUE = "log_queue"
 
 type TaskMessage = {
   id: string;
@@ -38,7 +39,7 @@ const simulateDelivery = async (type: string, to: string): Promise<void> => {
 
 const processMessage = async (
   msg: Message | null
-): Promise<{ success: boolean }> => {
+): Promise<{ success: boolean, data?: TaskMessage}> => {
   if (!msg) return { success: false };
 
   const data: TaskMessage = JSON.parse(msg.content.toString());
@@ -46,10 +47,10 @@ const processMessage = async (
 
   try {
     await simulateDelivery(data.type, data.to);
-    return { success: true };
+    return { success: true, data };
   } catch (error) {
     console.error("Processing failed:", error);
-    return { success: false };
+    return { success: false, data };
   }
 };
 
@@ -59,16 +60,31 @@ const startWorker = async () => {
 
   console.log("Connected to RabbitMQ");
 
-  await channel.assertQueue(QUEUE_NAME, { durable: true });
+  await channel.assertQueue(MESSAGE_QUEUE, { durable: true });
+  await channel.assertQueue(TASK_QUEUE, { durable: true });
+
   channel.prefetch(1);
 
   console.log("Worker waiting for messages...");
 
-  channel.consume(QUEUE_NAME, async (msg) => {
+  channel.consume(MESSAGE_QUEUE, async (msg) => {
     const result = await processMessage(msg);
 
     if (msg) {
-      result.success ? channel.ack(msg) : channel.nack(msg);
+      if (result.success && result.data) {
+        const {id, type, to}= result.data;
+        channel.sendToQueue(TASK_QUEUE, Buffer.from(JSON.stringify({
+          service: "DeliveryService",
+          taskId: id,
+          to,
+          type,
+          status: 'SENT',
+          timestamp: new Date(),
+        })));
+        channel.ack(msg);
+      } else{
+        channel.nack(msg);
+      }
     }
   });
 };

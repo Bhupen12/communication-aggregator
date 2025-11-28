@@ -1,12 +1,14 @@
 import express from "express";
 import amqp from "amqplib";
+import crypto from "crypto";
 
 const app = express();
 app.use(express.json());
 
 const PORT = 3001;
 const RABBITMQ_URL = "amqp://user:password@localhost:5672";
-const QUEUE_NAME = "message_queue";
+const MESSAGE_QUEUE = "message_queue";
+const TASK_QUEUE = "log_queue"
 
 const connectToRabbitMQ = async () => {
   try {
@@ -24,7 +26,8 @@ const startServer = async () => {
 
   console.log("Connected to RabbitMQ");
 
-  await channel.assertQueue(QUEUE_NAME, { durable: true });
+  await channel.assertQueue(MESSAGE_QUEUE, { durable: true });
+  await channel.assertQueue(TASK_QUEUE, { durable: true });
   console.log("Server ready...");
 
   app.post("/api/send", async (req, res) => {
@@ -38,14 +41,34 @@ const startServer = async () => {
       return res.status(500).json({ error: "RabbitMQ not connected" });
     }
 
+    const taskId = crypto.randomUUID();
+
     channel.sendToQueue(
-      QUEUE_NAME,
-      Buffer.from(JSON.stringify({ type, message, to }))
+      MESSAGE_QUEUE,
+      Buffer.from(JSON.stringify({ 
+        id: taskId, 
+        type, 
+        message, 
+        to,
+        timestamp: new Date(),
+     }))
+    );
+
+    channel.sendToQueue(
+      TASK_QUEUE,
+      Buffer.from(JSON.stringify({
+        service: "TaskService",
+        status: 'RECEIVED',
+        to,
+        taskId,
+        type,
+        timestamp: new Date(),
+      }))
     );
 
     console.log("Message sent → RabbitMQ");
 
-    return res.json({ message: "Sent" });
+    return res.json({ message: "Queued", taskId });
   });
 
   app.listen(PORT, () => console.log(`API running on ${PORT}`));
