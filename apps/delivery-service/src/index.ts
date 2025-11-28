@@ -1,5 +1,6 @@
 import { createRabbitMQChannel, LogMessagePayload, QUEUES, TaskMessagePayload } from "@repo/shared";
 import { type Message } from "amqplib";
+import { connectToMongoDB, saveDeliveryLog } from "./config/db";
 
 const simulateDelivery = async (type: string, to: string): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -39,6 +40,8 @@ const startWorker = async () => {
   const channel = await createRabbitMQChannel();
   if (!channel) return;
 
+  await connectToMongoDB();
+
   console.log("Connected to RabbitMQ");
 
   await channel.assertQueue(QUEUES.LOGS, { durable: true });
@@ -54,6 +57,7 @@ const startWorker = async () => {
     if (msg) {
       if (result.success && result.data) {
         const {id, type, to}= result.data;
+
         const logPayload: LogMessagePayload = {
           service: "DeliveryService",
           taskId: id,
@@ -63,6 +67,9 @@ const startWorker = async () => {
           timestamp: new Date(),
         }
         channel.sendToQueue(QUEUES.LOGS, Buffer.from(JSON.stringify(logPayload)));
+
+        await saveDeliveryLog(id, type, to, 'SENT')
+
         channel.ack(msg);
       } else{
         channel.nack(msg);

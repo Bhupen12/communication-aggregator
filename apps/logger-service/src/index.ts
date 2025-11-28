@@ -2,8 +2,6 @@ import { Client } from "@elastic/elasticsearch";
 import amqp, { Message } from "amqplib";
 import { createRabbitMQChannel, QUEUES } from "@repo/shared";
 
-const QUEUE_NAME = QUEUES.LOGS;
-
 const ELASTIC_NODE = "http://localhost:9200";
 
 const esClient = new Client({ node: ELASTIC_NODE });
