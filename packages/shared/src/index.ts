@@ -1,7 +1,5 @@
 import * as amqp from "amqplib";
 
-export const RABBITMQ_URL = "amqp://user:password@localhost:5672";
-
 export const QUEUES = {
   MESSAGE: "message_queue",
   LOGS: "log_queue",
@@ -30,7 +28,7 @@ export interface LogMessagePayload {
   timestamp: Date;
 }
 
-export const createRabbitMQChannel = async (url: string = RABBITMQ_URL): Promise<amqp.Channel> => {
+export const createRabbitMQChannel = async (url: string): Promise<amqp.Channel> => {
   try {
     const connection = await amqp.connect(url);
     console.log(`✅ Connected to RabbitMQ at ${url}`);

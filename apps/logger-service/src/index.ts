@@ -2,7 +2,8 @@ import { Client } from "@elastic/elasticsearch";
 import amqp, { Message } from "amqplib";
 import { createRabbitMQChannel, QUEUES } from "@repo/shared";
 
-const ELASTIC_NODE = "http://localhost:9200";
+const ELASTIC_NODE = process.env.ELASTIC_NODE || "http://localhost:9200";
+const RABBITMQ_URL = process.env.RABBITMQ_URL || "amqp://localhost";
 
 const esClient = new Client({ node: ELASTIC_NODE });
 
@@ -29,7 +30,7 @@ const saveLogToElasticsearch = async (msg: Message | null) => {
 };
 
 const startLogger = async () => {
-  const channel = await createRabbitMQChannel();
+  const channel = await createRabbitMQChannel(RABBITMQ_URL);
   if (!channel) return;
 
   await channel.assertQueue(QUEUES.LOGS, { durable: true });

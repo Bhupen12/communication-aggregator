@@ -5,10 +5,12 @@ import { createRabbitMQChannel, LogMessagePayload, QUEUES, SERVICE_NAMES, TaskMe
 const app = express();
 app.use(express.json());
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
+const RABBITMQ_URL = process.env.RABBITMQ_URL || "amqp://localhost:5672";
+
 
 const startServer = async () => {
-  const channel = await createRabbitMQChannel();
+  const channel = await createRabbitMQChannel(RABBITMQ_URL);
   if (!channel) return;
 
   console.log("Connected to RabbitMQ");

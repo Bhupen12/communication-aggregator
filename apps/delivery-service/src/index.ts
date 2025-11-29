@@ -2,6 +2,8 @@ import { createRabbitMQChannel, LogMessagePayload, QUEUES, TaskMessagePayload } 
 import { type Message } from "amqplib";
 import { connectToMongoDB, saveDeliveryLog } from "./config/db";
 
+const RABBITMQ_URL = process.env.RABBITMQ_URL || "amqp://localhost";
+
 const simulateDelivery = async (type: string, to: string): Promise<void> => {
   return new Promise((resolve, reject) => {
     const delay = Math.random() * 2000 + 1000;
@@ -37,7 +39,7 @@ const processMessage = async (
 };
 
 const startWorker = async () => {
-  const channel = await createRabbitMQChannel();
+  const channel = await createRabbitMQChannel(RABBITMQ_URL);
   if (!channel) return;
 
   await connectToMongoDB();

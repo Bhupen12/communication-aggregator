@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "nodemon --exec ts-node src/index.ts"
+    "dev": "nodemon -R dotenv/config --exec ts-node src/index.ts"
   },
   "keywords": [],
   "author": "",
