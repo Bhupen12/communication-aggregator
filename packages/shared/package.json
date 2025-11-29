@@ -1,0 +1,16 @@
+{
+  "name": "@repo/shared",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w" 
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.8"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.9"
+  }
+}

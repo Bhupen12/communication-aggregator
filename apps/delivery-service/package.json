@@ -4,14 +4,20 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "nodemon -r dotenv/config --exec ts-node src/index.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@repo/shared": "workspace:^",
     "amqplib": "^0.10.9",
     "dotenv": "^17.2.3",
     "mongoose": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.8"
   }
 }
