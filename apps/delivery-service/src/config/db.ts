@@ -22,14 +22,18 @@ const LogSchema = new Schema<IDeliveryLog>({
 
 const DeliveryLogModel = mongoose.model<IDeliveryLog>("DeliveryLog", LogSchema);
 
-export const connectToMongoDB = async (): Promise<void> => {
+export const connectToMongoDB = async (retries = 0, maxRetries = 10): Promise<void> => {
   try {
     await mongoose.connect(MONGO_URL);
     console.log("Connected to MongoDB");
   } catch (error) {
+    if (retries >= maxRetries) {
+      console.error("Max MongoDB connection retries reached. Exiting...");
+      process.exit(1);
+    }
     console.error("MongoDB connection failed. Retrying in 5s...", error);
     await new Promise((resolve) => setTimeout(resolve, 5000));
-    return connectToMongoDB();
+    return connectToMongoDB(retries + 1, maxRetries);
   }
 };
 
