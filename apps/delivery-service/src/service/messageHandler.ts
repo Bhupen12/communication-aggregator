@@ -1,13 +1,13 @@
-import { Message } from "amqplib";
-import { LogMessagePayload, QUEUES, SERVICE_NAMES, TaskMessagePayload } from "@repo/shared";
+import { LogMessagePayload, QUEUES, SERVICE_NAMES } from "@repo/shared";
+import { Channel, Message } from "amqplib";
 import { saveDeliveryLog } from "./db";
 import { parseTaskMessage, simulateDelivery } from "./utils";
 
 const MAX_RETRIES = 3;
 
-export const handleTaskMessage = async (channel: any, msg: Message) => {
+export const handleTaskMessage = async (channel: Channel, msg: Message) => {
   const headers = msg.properties?.headers || {};
-  const retryCount = headers.retryCount || 0;
+  const retryCount = Number(headers.retryCount ?? 0) || 0;
 
   const data = parseTaskMessage(msg);
   if (!data) {

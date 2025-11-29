@@ -1,5 +1,5 @@
+import { TaskMessagePayload } from "@repo/shared";
 import { Message } from "amqplib";
-import { TaskMessagePayload } from "packages/shared/src";
 
 export const simulateDelivery = async (type: string, to: string): Promise<void> => {
   return new Promise((resolve, reject) => {
