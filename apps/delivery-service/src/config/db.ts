@@ -12,7 +12,7 @@ interface IDeliveryLog extends Document {
 }
 
 const LogSchema = new Schema<IDeliveryLog>({
-  taskId: { type: String, required: true },
+  taskId: { type: String, required: true, unique: true },
   type: { type: String, required: true },
   to: { type: String, required: true },
   status: { type: String, required: true },
@@ -53,7 +53,11 @@ export const saveDeliveryLog = async (
     });
     console.log(`Logged to MongoDB: ${taskId}`);
     return true;
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === 11000) {
+     console.log("Duplicate log, ignoring:", taskId);
+     return true;
+   }
     console.error("Failed to save log to MongoDB", error);
     return false;
   }
