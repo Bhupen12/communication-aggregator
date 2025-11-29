@@ -42,7 +42,8 @@ const startServer = async () => {
 
     channel.sendToQueue(
       QUEUES.MESSAGE,
-      Buffer.from(JSON.stringify(msgPayload))
+      Buffer.from(JSON.stringify(msgPayload)),
+      { persistent: true }
     );
 
     const logPayload: LogMessagePayload = {
@@ -56,7 +57,8 @@ const startServer = async () => {
 
     channel.sendToQueue(
       QUEUES.LOGS,
-      Buffer.from(JSON.stringify(logPayload))
+      Buffer.from(JSON.stringify(logPayload)),
+      { persistent: true }
     );
 
     console.log("Message sent → RabbitMQ");
