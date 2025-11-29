@@ -28,14 +28,20 @@ export interface LogMessagePayload {
   timestamp: Date;
 }
 
-export const createRabbitMQChannel = async (url: string): Promise<amqp.Channel> => {
+export const createRabbitMQChannel = async (url: string, maxRetries: number = 10, retryCount: number = 0): Promise<amqp.Channel> => {
   try {
     const connection = await amqp.connect(url);
     console.log(`✅ Connected to RabbitMQ at ${url}`);
     return await connection.createChannel();
   } catch (err) {
-    console.error("❌ RabbitMQ Connection failed. Retrying in 5s...");
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-    return createRabbitMQChannel(url); // Recursive call
+    if(retryCount >= maxRetries){
+      console.error(`RabbitMQ Connection failed after ${maxRetries} attempts`);
+      throw new Error("Max RabbitMQ connection retries exceeded");
+    }
+
+    const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
+    console.error(`RabbitMQ Connection failed. Retrying in ${delay}ms... (${retryCount + 1}/${maxRetries})`);
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    return createRabbitMQChannel(url, maxRetries, retryCount + 1); // Recursive call
   }
 };
