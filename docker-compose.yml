@@ -10,12 +10,16 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: user
       RABBITMQ_DEFAULT_PASS: password
+    restart: unless-stopped
 
   # 2. MongoDB (Database)
   mongo:
     image: mongo:latest
     ports:
       - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
 
   # 3. Elasticsearch (Log Storage)
   elasticsearch:
@@ -25,6 +29,9 @@ services:
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m" # Memory limit taaki laptop hang na ho
     ports:
       - "9200:9200"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    restart: unless-stopped
 
   # 4. Kibana (Log UI)
   kibana:
@@ -35,3 +42,8 @@ services:
       - "5601:5601"
     depends_on:
       - elasticsearch
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
+  es-data:
