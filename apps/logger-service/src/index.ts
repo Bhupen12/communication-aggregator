@@ -37,11 +37,18 @@ const startLogger = async () => {
   console.log("Logger ready...");
 
   channel.consume(QUEUES.LOGS, async (msg) => {
-    const result = await saveLogToElasticsearch(msg);
-
-    if (msg) {
-      result.success ? channel.ack(msg) : channel.nack(msg);
+    try {
+      const result = await saveLogToElasticsearch(msg);
+      if (msg) {
+        result.success ? channel.ack(msg) : channel.nack(msg);
+      }
+    } catch (error) {
+      console.error("Error processing message:", error);
+      if (msg) {
+        channel.nack(msg, false, true);
+      }
     }
+
   });
 };
 
