@@ -1,4 +1,4 @@
-import { createRabbitMQChannel, LogMessagePayload, QUEUES, TaskMessagePayload } from "@repo/shared";
+import { createRabbitMQChannel, LogMessagePayload, QUEUES, SERVICE_NAMES, TaskMessagePayload } from "@repo/shared";
 import { type Message } from "amqplib";
 import { connectToMongoDB, saveDeliveryLog } from "./config/db";
 
@@ -23,10 +23,16 @@ const simulateDelivery = async (type: string, to: string): Promise<void> => {
 
 const processMessage = async (
   msg: Message | null
-): Promise<{ success: boolean, data?: TaskMessagePayload}> => {
+): Promise<{ success: boolean, data?: TaskMessagePayload }> => {
   if (!msg) return { success: false };
 
-  const data: TaskMessagePayload = JSON.parse(msg.content.toString());
+  let data: TaskMessagePayload;
+  try {
+    data = JSON.parse(msg.content.toString());
+  } catch (error) {
+    console.error("Failed to parse message:", error);
+    return { success: false };
+  }
   console.log("Received message:", data);
 
   try {
@@ -58,10 +64,10 @@ const startWorker = async () => {
 
     if (msg) {
       if (result.success && result.data) {
-        const {id, type, to}= result.data;
+        const { id, type, to } = result.data;
 
         const logPayload: LogMessagePayload = {
-          service: "DeliveryService",
+          service: SERVICE_NAMES.DELIVERY,
           taskId: id,
           to,
           type,
@@ -73,7 +79,7 @@ const startWorker = async () => {
         await saveDeliveryLog(id, type, to, 'SENT')
 
         channel.ack(msg);
-      } else{
+      } else {
         channel.nack(msg);
       }
     }
