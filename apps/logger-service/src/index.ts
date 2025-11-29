@@ -1,6 +1,6 @@
 import { Client } from "@elastic/elasticsearch";
-import amqp, { Message } from "amqplib";
 import { createRabbitMQChannel, QUEUES } from "@repo/shared";
+import { Message } from "amqplib";
 
 const ELASTIC_NODE = process.env.ELASTIC_NODE || "http://localhost:9200";
 const RABBITMQ_URL = process.env.RABBITMQ_URL || "amqp://localhost";
@@ -52,4 +52,7 @@ const startLogger = async () => {
   });
 };
 
-startLogger();
+startLogger().catch(err => {
+  console.error("Error starting logger:", err);
+  process.exit(1);
+})
