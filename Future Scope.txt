@@ -1,0 +1,80 @@
+1. Resilience & Reliability (System Marna Nahi Chahiye)
+Implement Dead Letter Exchange (DLX) Strategy:
+
+Current Flaw: Agar message fail hota hai, toh wo ya toh gayab ho jata hai ya infinite loop mein phass jata hai (nack with requeue).
+
+Future Scope: Ek DLX (Dead Letter Exchange) configure karna hai. Jab koi message 3 baar retry karne ke baad bhi fail ho, toh wo main queue se hatkar dead_letter_queue mein chala jaye. Wahan se hum usse manual inspect kar sakte hain ya alert trigger kar sakte hain.
+
+Why: Taki "Poison Messages" system ko choke na karein.
+
+Exponential Backoff for Retries:
+
+Current Flaw: setTimeout use ho raha hai retry ke liye (RAM based). Agar server restart hua, toh retry gayab. Plus, immediate retry server pe load badhata hai.
+
+Future Scope: Exponential Backoff implement karna. Pehla retry 2s baad, dusra 10s baad, teesra 1 min baad. Iske liye RabbitMQ ka "Delayed Message Plugin" ya TTL + Wait Queue pattern use karenge.
+
+Idempotency Handling (Duplicate Prevention):
+
+Current Flaw: Set (Javascript In-memory) use ho raha hai deduplication ke liye. Server restart hote hi Set empty ho jayega aur duplicates process ho jayenge.
+
+Future Scope: Redis use karna hai distributed locking aur deduplication ke liye. Har message ki ek unique ID (idempotency_key) Redis mein store hogi with TTL. Worker message process karne se pehle Redis check karega.
+
+2. Scalability & Routing (Traffic Control)
+Exchange-Based Routing (Topic Exchange):
+
+Current Flaw: TaskRouter seedha queue mein bhej raha hai (sendToQueue). Ye producer aur consumer ko tightly couple kar raha hai.
+
+Future Scope: Topic Exchange implement karna.
+
+Producer bhejega routing key ke saath: notification.email.transactional ya notification.sms.marketing.
+
+Queues bind hongi patterns pe: Email Worker sunega notification.email.*, SMS Worker sunega notification.sms.*.
+
+Why: Kal ko naya service add karna ho (e.g., WhatsApp), toh producer code change nahi karna padega.
+
+Horizontal Scaling Support:
+
+Current Flaw: Abhi ek hi consumer chal raha hai.
+
+Future Scope: Docker Compose/Kubernetes use karke Delivery Service ke multiple replicas (e.g., 5 instances) chalana. RabbitMQ automatic load balancing karega round-robin fashion mein.
+
+3. Infrastructure & DevOps (Code ke Bahar ki Duniya)
+Graceful Shutdown Implementation:
+
+Current Flaw: Agar tu Ctrl+C dabata hai ya crash hota hai, toh jo process chal raha hai wo beech mein kat jayega (Data Corruption).
+
+Future Scope: SIGTERM aur SIGINT signals handle karna. Jab server band ho raha ho:
+
+RabbitMQ connection close mat karo turant.
+
+Current messages processing complete hone do.
+
+Naye messages accept karna band karo.
+
+Fir exit karo.
+
+Configuration Management:
+
+Current Flaw: URLs aur Credentials hardcoded hain (amqp://user:password...).
+
+Future Scope: dotenv use karke saare secrets aur config environment variables (.env) se load karna. Production aur Dev environment alag hone chahiye.
+
+4. Observability & Monitoring (Jasoosi)
+Distributed Tracing (Correlation IDs):
+
+Current Flaw: Logs mein taskId hai, lekin agar flow complex hua toh pata nahi chalega request kahan atki.
+
+Future Scope: Ek Correlation-ID (Trace ID) generate karna entry point pe (Task Router). Ye ID Headers ke through RabbitMQ aur Logs har jagah travel karegi. Kibana mein bas ek ID daalo aur poori journey dikh jayegi.
+
+Structured Logging (Winston/Pino):
+
+Current Flaw: console.log use ho raha hai. Ye slow hai aur structure maintain nahi karta.
+
+Future Scope: Winston ya Pino logger use karna. Ye JSON format mein logs likhte hain jo Elasticsearch easily parse kar leta hai without custom logic.
+
+5. Security (Darwaza Mazboot Karo)
+Input Validation (Zod/Joi):
+
+Current Flaw: Bas if(!type || !message) check ho raha hai.
+
+Future Scope: Zod library use karke strict schema validation lagana. Email format sahi hai? Phone number valid hai? Payload size limit kya hai? Ye sab queue mein jaane se pehle check hona chahiye.
